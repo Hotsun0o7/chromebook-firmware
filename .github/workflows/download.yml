@@ -1,0 +1,27 @@
+name: Download Redrix Firmware
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download MrChromebox Script and Fetch ROM
+        run: |
+          mkdir -p output
+          curl -sLO https://mrchromebox.tech/firmware-util.sh
+          # Telechargement direct du binaire Redrix depuis les serveurs MrChromebox sur VM x86_64
+          curl -sLA "Mozilla/5.0" -o output/coreboot_redrix_mrchromebox.rom "https://mrchromebox.tech/files/firmware/full_rom/coreboot_tianocore-redrix-mrchromebox_20240519.rom" || true
+          
+          # Verification si backup alternatif necessaire
+          if [ ! -s output/coreboot_redrix_mrchromebox.rom ]; then
+            curl -sLA "Mozilla/5.0" -o output/coreboot_redrix_mrchromebox.rom "https://raw.githubusercontent.com/MrChromebox/firmware/master/full_rom/coreboot_tianocore-redrix-mrchromebox_20240519.rom" || true
+          fi
+
+      - name: Upload ROM Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: redrix-coreboot-rom
+          path: output/*.rom
