@@ -8,20 +8,28 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Fetch ROM via Curl with Full Mirror
+      - name: Fetch via Secondary Mirrors
         run: |
           mkdir -p output
-          # Telechargement direct du miroir avec suivi des redirections HTTP/2
-          curl -L -k -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0" \
-               -e "https://mrchromebox.tech/" \
-               -o output/redrix_coreboot.rom \
-               "https://mrchromebox.tech/files/firmware/full_rom/coreboot_tianocore-redrix-mrchromebox_20240519.rom"
+          cd output
           
-          # Verification de la taille dans la console
-          ls -lh output/
+          # Tentative 1: Miroir secondaire et IP directes
+          curl -sL -A "Mozilla/5.0" -o coreboot_redrix.rom "https://mrchromebox.net/files/firmware/full_rom/coreboot_tianocore-redrix-mrchromebox_20240519.rom" || true
+
+          # Tentative 2: Script de secours avec recuperation du chemin exact
+          if [ ! -s coreboot_redrix.rom ] || [ $(stat -c%s "coreboot_redrix.rom") -lt 1000000 ]; then
+            echo "Miroir 1 echoue, tentative via l'API de deploiement..."
+            curl -s https://raw.githubusercontent.com/MrChromebox/scripts/master/firmware-util.sh -o firmware-util.sh
+            sed -i 's/mrchromebox.tech/mrchromebox.net/g' firmware-util.sh
+            bash firmware-util.sh --download-only redrix || true
+            mv ~/Downloads/*.rom . 2>/dev/null || true
+          fi
+
+          # Verification de la taille
+          ls -lh
 
       - name: Upload ROM Artifact
         uses: actions/upload-artifact@v4
         with:
           name: redrix-coreboot-rom
-          path: output/redrix_coreboot.rom
+          path: output/*.rom
