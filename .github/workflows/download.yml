@@ -8,21 +8,32 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Force Download ROM
+      - name: Run Script and Get ROM
         run: |
           mkdir -p output
-          cd output
+          # Telecharger les scripts de MrChromebox
+          curl -sLO https://mrchromebox.tech/firmware-util.sh
+          curl -sLO https://mrchromebox.tech/functions.sh
+          curl -sLO https://mrchromebox.tech/device-db.sh
           
-          # Telechargement direct avec gestion du redirect + User-Agent complet
-          curl -fL -A "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" \
-               -o coreboot_redrix.rom \
-               "https://mrchromebox.tech/files/firmware/full_rom/coreboot_tianocore-redrix-mrchromebox_20240519.rom" || true
+          # Charger les fonctions pour recuperer le bon lien dynamique de REDRIX
+          source functions.sh 2>/dev/null || true
+          source device-db.sh 2>/dev/null || true
           
-          # Verification de la taille
-          ls -lh coreboot_redrix.rom
+          # Telecharger directement le fichier ROM officiel
+          curl -sL -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" \
+               -o output/redrix_full_rom.rom \
+               "https://mrchromebox.tech/files/firmware/full_rom/coreboot_tianocore-redrix-mrchromebox_20240519.rom"
+          
+          # Backup direct via miroir alternatif si necessaire
+          if [ $(stat -c%s "output/redrix_full_rom.rom") -lt 1000000 ]; then
+            curl -sL -A "Mozilla/5.0" \
+                 -o output/redrix_full_rom.rom \
+                 "https://raw.githubusercontent.com/MrChromebox/firmware/master/full_rom/coreboot_tianocore-redrix-mrchromebox_20240519.rom"
+          fi
 
       - name: Upload ROM Artifact
         uses: actions/upload-artifact@v4
         with:
           name: redrix-coreboot-rom
-          path: output/coreboot_redrix.rom
+          path: output/redrix_full_rom.rom
