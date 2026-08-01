@@ -8,20 +8,21 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Download Redrix via Official Script
+      - name: Force Download ROM
         run: |
           mkdir -p output
           cd output
-          # Telechargement et execution du script officiel MrChromebox en mode auto
-          curl -sLO https://mrchromebox.tech/firmware-util.sh
-          sudo bash firmware-util.sh --download-only redrix || true
           
-          # Si le fichier s'est telecharge à la racine
-          mv ~/Downloads/*.rom . 2>/dev/null || true
-          mv /*.rom . 2>/dev/null || true
+          # Telechargement direct avec gestion du redirect + User-Agent complet
+          curl -fL -A "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" \
+               -o coreboot_redrix.rom \
+               "https://mrchromebox.tech/files/firmware/full_rom/coreboot_tianocore-redrix-mrchromebox_20240519.rom" || true
+          
+          # Verification de la taille
+          ls -lh coreboot_redrix.rom
 
       - name: Upload ROM Artifact
         uses: actions/upload-artifact@v4
         with:
           name: redrix-coreboot-rom
-          path: output/*.rom
+          path: output/coreboot_redrix.rom
