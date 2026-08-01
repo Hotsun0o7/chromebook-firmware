@@ -8,40 +8,20 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Auto-detect and Download Redrix ROM
+      - name: Fetch ROM via Curl with Full Mirror
         run: |
           mkdir -p output
-          python3 -c '
-          import urllib.request
-          import re
-
-          # 1. Recuperer la liste des fichiers pour trouver le nom exact de REDRIX
-          index_url = "https://mrchromebox.tech/files/firmware/full_rom/"
-          headers = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64)"}
+          # Telechargement direct du miroir avec suivi des redirections HTTP/2
+          curl -L -k -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0" \
+               -e "https://mrchromebox.tech/" \
+               -o output/redrix_coreboot.rom \
+               "https://mrchromebox.tech/files/firmware/full_rom/coreboot_tianocore-redrix-mrchromebox_20240519.rom"
           
-          req = urllib.request.Request(index_url, headers=headers)
-          html = urllib.request.urlopen(req).read().decode("utf-8")
-
-          # Recherche du fichier rom correspondant a redrix
-          match = re.search(r"coreboot_[a-zA-Z0-9_\-]*redrix[a-zA-Z0-9_\-]*\.rom", html, re.IGNORECASE)
-
-          if match:
-              filename = match.group(0)
-              rom_url = index_url + filename
-              print(f"Fichier trouve: {filename}")
-              
-              # 2. Telechargement du vrai fichier ROM
-              req_rom = urllib.request.Request(rom_url, headers=headers)
-              with urllib.request.urlopen(req_rom) as resp, open(f"output/{filename}", "wb") as f:
-                  f.write(resp.read())
-              print("Telechargement termine avec succes !")
-          else:
-              print("ROM Redrix non trouvee dans la liste.")
-          '
+          # Verification de la taille dans la console
           ls -lh output/
 
       - name: Upload ROM Artifact
         uses: actions/upload-artifact@v4
         with:
           name: redrix-coreboot-rom
-          path: output/*.rom
+          path: output/redrix_coreboot.rom
